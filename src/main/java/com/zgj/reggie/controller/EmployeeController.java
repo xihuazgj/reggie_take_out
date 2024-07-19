@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zgj.reggie.common.R;
 import com.zgj.reggie.entity.Employee;
-import com.zgj.reggie.service.impl.IEmployeeService;
+import com.zgj.reggie.service.IEmployeeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
@@ -13,7 +13,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
 
 @Slf4j
 @RestController
@@ -67,12 +66,12 @@ public class EmployeeController {
         log.info("新增员工，员工信息：{}",employee.toString());
         //设置员工初始密码,并进行md5加密处理
         employee.setPassword(DigestUtils.md5DigestAsHex("123456".getBytes()));
-        employee.setCreateTime(LocalDateTime.now());
-        employee.setUpdateTime(LocalDateTime.now());
+//        employee.setCreateTime(LocalDateTime.now());
+//        employee.setUpdateTime(LocalDateTime.now());
         //获得当前登录用户的id
         Long empId = (Long) request.getSession().getAttribute("employee");
-        employee.setCreateUser(empId);
-        employee.setUpdateUser(empId);
+//        employee.setCreateUser(empId);
+//        employee.setUpdateUser(empId);
         employeeService.save(employee);
 
         return R.success("新增员工成功！");
@@ -82,10 +81,10 @@ public class EmployeeController {
     * 员工信息分页查询
     * */
     @GetMapping("/page")
-    public R<Page> page(int page,int pageSize,String name){
+    public R<Page<Employee>> page(int page,int pageSize,String name){
         log.info("page = {},pageSize = {},name = {}",page,pageSize,name);
         //构造分页构造器
-        Page pageInfo = new Page(page,pageSize);
+        Page<Employee> pageInfo = new Page<>(page,pageSize);
         //构建条件构造器
         LambdaQueryWrapper<Employee> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.like(!StringUtils.isEmpty(name),Employee::getName,name);
@@ -104,10 +103,10 @@ public class EmployeeController {
     @PutMapping
     public R<String> update(HttpServletRequest request,@RequestBody Employee employee){
         log.info(employee.toString());
-        Long empId = (Long) request.getSession().getAttribute("employee");
-        log.info("ID :{}",empId);
-        employee.setUpdateTime(LocalDateTime.now());
-        employee.setUpdateUser(empId);
+       // Long empId = (Long) request.getSession().getAttribute("employee");
+       // log.info("ID :{}",empId);
+//        employee.setUpdateTime(LocalDateTime.now());
+//        employee.setUpdateUser(empId);
         employeeService.updateById(employee);
         return R.success("员工信息修改成功!");
     }
