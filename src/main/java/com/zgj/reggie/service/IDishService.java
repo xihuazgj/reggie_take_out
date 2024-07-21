@@ -9,4 +9,6 @@ public interface IDishService extends IService<Dish> {
     public void saveWithFlavor(DishDto dishDto);
 
     DishDto queryWithFlavor(Long id);
+
+    void updateWithFlavor(DishDto dishDto);
 }

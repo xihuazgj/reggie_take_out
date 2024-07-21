@@ -89,5 +89,13 @@ public class DishController {
         BeanUtils.copyProperties(dish,dishDto);
         return R.success(dishDto);
     }
+
+    @PutMapping
+    public R<String> update(@RequestBody DishDto dishDto){
+        log.info(dishDto.toString());
+        dishService.updateById(dishDto);
+        dishService.updateWithFlavor(dishDto);
+        return R.success("修改菜品成功！");
+    }
 }
 

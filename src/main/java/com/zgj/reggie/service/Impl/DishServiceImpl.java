@@ -43,7 +43,6 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements ID
         //保存菜品口味数据到菜品口味表dish_flavor
         dishFlavorService.saveBatch(flavors);
     }
-
     @Override
     public DishDto queryWithFlavor(Long id) {
         DishDto dishDto = new DishDto();
@@ -51,4 +50,12 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements ID
         dishDto.setFlavors(dishFlavorList);
         return dishDto;
     }
-}
+
+    @Override
+    public void updateWithFlavor(DishDto dishDto) {
+        String flavors = dishDto.getFlavors().toString();
+        dishFlavor.setValue(flavors);
+        dishFlavorService.updateById(dishFlavor);
+    }
+    }
+
