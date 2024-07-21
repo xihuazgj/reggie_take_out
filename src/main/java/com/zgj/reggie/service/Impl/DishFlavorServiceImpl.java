@@ -19,4 +19,6 @@ public class DishFlavorServiceImpl extends ServiceImpl<DishFlavorMapper, DishFla
         List<DishFlavor> list = lambdaQuery().eq(DishFlavor::getDishId, id).list();
         return list;
     }
+
+
 }

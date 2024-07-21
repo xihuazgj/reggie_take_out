@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,10 +53,25 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements ID
     }
 
     @Override
+    @Transactional
     public void updateWithFlavor(DishDto dishDto) {
-        String flavors = dishDto.getFlavors().toString();
-        dishFlavor.setValue(flavors);
-        dishFlavorService.updateById(dishFlavor);
+        //更新dish表信息
+        this.updateById(dishDto);
+        //清理当前菜品对应口味数据 --dish_flavor表的delete的操作
+        LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper =
+                new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(DishFlavor::getDishId,dishDto.getId());
+        dishFlavorService.remove(lambdaQueryWrapper);
+        //添加当前提交过来的口味数据--dish_flavor表的insert的操作
+        Long dishId = dishDto.getId();//获得菜品id
+        List<DishFlavor> flavors = dishDto.getFlavors();
+        flavors = flavors.stream().map((item) -> {
+            item.setDishId(dishId);
+            return item;
+        }).collect(Collectors.toList());
+        log.info(flavors.toString());
+        //保存菜品口味数据到菜品口味表dish_flavor
+        dishFlavorService.saveBatch(flavors);
     }
     }
 

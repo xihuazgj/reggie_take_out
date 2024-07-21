@@ -8,4 +8,5 @@ import java.util.List;
 public interface IDishFlavorService extends IService<DishFlavor> {
 
     List<DishFlavor> queryWithDishId(Long id);
+
 }

@@ -1,6 +1,7 @@
 package com.zgj.reggie.controller;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zgj.reggie.common.R;
@@ -92,8 +93,6 @@ public class DishController {
 
     @PutMapping
     public R<String> update(@RequestBody DishDto dishDto){
-        log.info(dishDto.toString());
-        dishService.updateById(dishDto);
         dishService.updateWithFlavor(dishDto);
         return R.success("修改菜品成功！");
     }
