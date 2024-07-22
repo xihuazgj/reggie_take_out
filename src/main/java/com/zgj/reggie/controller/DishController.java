@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zgj.reggie.common.R;
 import com.zgj.reggie.entity.Category;
 import com.zgj.reggie.entity.Dish;
+import com.zgj.reggie.entity.DishFlavor;
 import com.zgj.reggie.entity.Employee;
 import com.zgj.reggie.service.ICategoryService;
 import com.zgj.reggie.service.IDishFlavorService;
@@ -28,9 +29,6 @@ public class DishController {
 
     @Autowired
     private IDishService dishService;
-
-    @Autowired
-    private IDishFlavorService dishFlavorService;
 
     @Autowired
     private ICategoryService categoryService;
@@ -95,6 +93,40 @@ public class DishController {
     public R<String> update(@RequestBody DishDto dishDto){
         dishService.updateWithFlavor(dishDto);
         return R.success("修改菜品成功！");
+    }
+
+    @PostMapping("/status/{code}")
+    public R<String> updateStatus(@PathVariable Integer code,@RequestParam List<Long> ids){
+        //通过ids查询菜品
+        List<Dish> dishList = dishService.listByIds(ids);
+        //更新菜品的状态码
+        dishList.forEach(item -> {
+            item.setStatus(code);
+            dishService.updateById(item);
+        });
+        return R.success("成功！");
+    }
+    @GetMapping("/list")
+    public R<List<Dish>> dishList(Long categoryId,String name){
+        //条件构造器
+        LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
+        //如果传来的name为null,就查id
+        if (name == null) {
+            //添加条件
+            queryWrapper.eq(Dish::getCategoryId, categoryId);
+            //添加排序条件
+            queryWrapper.orderByAsc(Dish::getSort)
+                    .orderByAsc(Dish::getUpdateTime);
+            List<Dish> list = dishService.list(queryWrapper);
+            return R.success(list);
+        }
+        //如果传来的name不为null,就查name
+        queryWrapper.like(Dish::getName,name);
+        //添加排序条件
+        queryWrapper.orderByAsc(Dish::getSort)
+                .orderByAsc(Dish::getUpdateTime);
+        List<Dish> list = dishService.list(queryWrapper);
+        return R.success(list);
     }
 }
 
