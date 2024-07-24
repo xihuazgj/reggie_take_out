@@ -36,5 +36,4 @@ public class R<T> {
         this.map.put(key, value);
         return this;
     }
-
 }

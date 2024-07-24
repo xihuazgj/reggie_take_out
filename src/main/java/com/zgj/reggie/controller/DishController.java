@@ -5,10 +5,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zgj.reggie.common.R;
-import com.zgj.reggie.entity.Category;
-import com.zgj.reggie.entity.Dish;
-import com.zgj.reggie.entity.DishFlavor;
-import com.zgj.reggie.entity.Employee;
+import com.zgj.reggie.entity.*;
 import com.zgj.reggie.service.ICategoryService;
 import com.zgj.reggie.service.IDishFlavorService;
 import com.zgj.reggie.service.IDishService;
@@ -107,18 +104,24 @@ public class DishController {
         return R.success("成功！");
     }
     @GetMapping("/list")
-    public R<List<Dish>> dishList(Long categoryId,String name){
+    public R<List<DishDto>> dishList(Long categoryId,Integer status,String name){
         //条件构造器
         LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
         //如果传来的name为null,就查id
         if (name == null) {
             //添加条件
-            queryWrapper.eq(Dish::getCategoryId, categoryId);
+            queryWrapper.eq(Dish::getCategoryId, categoryId).eq(status != null,Dish::getStatus,status);
             //添加排序条件
             queryWrapper.orderByAsc(Dish::getSort)
                     .orderByAsc(Dish::getUpdateTime);
             List<Dish> list = dishService.list(queryWrapper);
-            return R.success(list);
+            List<DishDto> dishDtoList = list.stream().map(item -> {
+                Long id = item.getId();
+                DishDto dishDto = dishService.queryWithFlavor(id);
+                BeanUtil.copyProperties(item, dishDto);
+                return dishDto;
+            }).collect(Collectors.toList());
+            return R.success(dishDtoList);
         }
         //如果传来的name不为null,就查name
         queryWrapper.like(Dish::getName,name);
@@ -126,7 +129,13 @@ public class DishController {
         queryWrapper.orderByAsc(Dish::getSort)
                 .orderByAsc(Dish::getUpdateTime);
         List<Dish> list = dishService.list(queryWrapper);
-        return R.success(list);
+        List<DishDto> dishDtoList = list.stream().map(item -> {
+            Long id = item.getId();
+            DishDto dishDto = dishService.queryWithFlavor(id);
+            BeanUtil.copyProperties(item, dishDto);
+            return dishDto;
+        }).collect(Collectors.toList());
+        return R.success(dishDtoList);
     }
 }
 

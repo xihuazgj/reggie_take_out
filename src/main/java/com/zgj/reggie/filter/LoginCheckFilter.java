@@ -34,7 +34,9 @@ public class LoginCheckFilter implements Filter {
                 "/employee/logout",
                 "/backend/**",
                 "/front/**",
-                "/common/**"
+                "/common/**",
+//                "/shoppingCart/**",
+                "/user/login"
         };
         //2.判断本次请求是否需要处理
         boolean check = check(urls, requestURI);
@@ -46,13 +48,29 @@ public class LoginCheckFilter implements Filter {
         }
         //4.需要处理，判断登录状态，如果登录，则放行
         if (request.getSession().getAttribute("employee") != null){
-            log.info("ID为{}的用户已登录，放行",request.getSession().getAttribute("employee"));
+            log.info("ID为{}的后台系统用户已登录，放行",request.getSession().getAttribute("employee"));
 
             Long empId = (Long) request.getSession().getAttribute("employee");
             BaseContext.setCurrentId(empId);
             filterChain.doFilter(request,response);
             return;
         }
+        if (request.getSession().getAttribute("user") != null){
+            log.info("ID为{}的用户已登录，放行",request.getSession().getAttribute("user"));
+
+            Long userId = (Long) request.getSession().getAttribute("user");
+            BaseContext.setCurrentId(userId);
+            filterChain.doFilter(request,response);
+            return;
+        }
+//        if (request.getSession().getAttribute("employee") != null && request.getSession().getAttribute("user") != null){
+//            Long userId = (Long) request.getSession().getAttribute("user");
+//            BaseContext.setCurrentId(userId);
+//            Long empId = (Long) request.getSession().getAttribute("employee");
+//            BaseContext.setCurrentId(empId);
+//            filterChain.doFilter(request,response);
+//            return;
+//        }
         log.info("用户未登录！");
         //5.如果未登录，返回未登录结果，通过输出流方式向客户端响应数据
         response.getWriter().write(JSON.toJSONString(R.error("NOTLOGIN")));

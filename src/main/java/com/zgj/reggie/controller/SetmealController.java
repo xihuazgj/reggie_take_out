@@ -1,16 +1,12 @@
 package com.zgj.reggie.controller;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zgj.reggie.common.R;
-import com.zgj.reggie.entity.Category;
-import com.zgj.reggie.entity.Dish;
-import com.zgj.reggie.entity.Setmeal;
-import com.zgj.reggie.entity.SetmealDish;
-import com.zgj.reggie.service.ICategoryService;
-import com.zgj.reggie.service.ISetmealDishService;
-import com.zgj.reggie.service.ISetmealService;
+import com.zgj.reggie.entity.*;
+import com.zgj.reggie.service.*;
 import dto.DishDto;
 import dto.SetmealDto;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +31,9 @@ public class SetmealController {
 
     @Autowired
     private ISetmealDishService setmealDishService;
+
+    @Autowired
+    private IDishService dishService;
     @GetMapping("/page")
     public R<Page> page(int page, int pageSize, String name){
         //构造分页构造器
@@ -103,5 +102,26 @@ public class SetmealController {
             setmealService.updateById(item);
         });
         return R.success("成功！");
+    }
+
+    @GetMapping("/dish/{id}")
+    public R<List<DishDto>> dishDetail(@PathVariable("id") Long id){
+        List<SetmealDish> setmealDishList = setmealDishService.lambdaQuery().eq(SetmealDish::getSetmealId, id).list();
+        List<DishDto> dishDtoList = setmealDishList.stream().map(item -> {
+            Long dishId = item.getDishId();
+            Dish dish = dishService.getById(dishId);
+            DishDto dishDto = dishService.queryWithFlavor(dishId);
+            BeanUtil.copyProperties(dish, dishDto);
+            Integer copies = item.getCopies();
+            dishDto.setCopies(copies);
+            return dishDto;
+        }).collect(Collectors.toList());
+        return R.success(dishDtoList);
+    }
+
+    @GetMapping("list")
+    public R<List<Setmeal>> setmealDishs(String categoryId,Integer status){
+        List<Setmeal> setmealList = setmealService.lambdaQuery().eq(Setmeal::getCategoryId, categoryId).eq(Setmeal::getStatus, status).list();
+        return R.success(setmealList);
     }
 }

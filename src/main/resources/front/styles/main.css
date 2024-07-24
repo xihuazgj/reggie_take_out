@@ -591,7 +591,9 @@
   line-height: 36rem;
   height: 36rem;
 }
-
+#main .dialogCart .divCartContent .divCartItem .divNum .divDishNum{
+  width: 10rem;
+}
 #main .dialogCart .divCartContent .divCartItem .divNum img {
   width: 36rem;
   height: 36rem;

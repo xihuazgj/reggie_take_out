@@ -418,6 +418,7 @@
             async subtractCart(item){
                 let params = {
                   dishId:item.id,
+
                 }
                 if(!Array.isArray(item.flavors)){
                   params = {
@@ -434,7 +435,8 @@
                 if(this.setMealDialog.show){
                   item.number = (res.data.number === 0 ? undefined : res.data.number)
                 }
-                this.getCartData()
+                 this.getCartData()
+                  // this.initData()
                 }else{
                   this.$notify({ type:'warning', message:res.msg});
                 }
@@ -472,6 +474,7 @@
             //购物车中减少商品数量
             async cartNumberSubtract(item){
               let params = {
+                  id:item.id,
                   dishId:item.dishId,
                   setmealId:item.setmealId,
                 }
@@ -482,7 +485,8 @@
                     dish.number = (res.data.number === 0 ? undefined : res.data.number)
                   }
                 })
-                this.getCartData()
+                await this.getCartData()
+
                 }else{
                   this.$notify({ type:'warning', message:res.msg});
                 }

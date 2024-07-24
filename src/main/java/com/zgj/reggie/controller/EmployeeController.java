@@ -101,12 +101,8 @@ public class EmployeeController {
     */
 
     @PutMapping
-    public R<String> update(HttpServletRequest request,@RequestBody Employee employee){
+    public R<String> update(@RequestBody Employee employee){
         log.info(employee.toString());
-       // Long empId = (Long) request.getSession().getAttribute("employee");
-       // log.info("ID :{}",empId);
-//        employee.setUpdateTime(LocalDateTime.now());
-//        employee.setUpdateUser(empId);
         employeeService.updateById(employee);
         return R.success("员工信息修改成功!");
     }
