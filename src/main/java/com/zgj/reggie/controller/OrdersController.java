@@ -1,22 +1,21 @@
 package com.zgj.reggie.controller;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.UUID;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sun.org.apache.bcel.internal.generic.MULTIANEWARRAY;
 import com.zgj.reggie.common.R;
 import com.zgj.reggie.entity.*;
-import com.zgj.reggie.service.IAddressBookService;
-import com.zgj.reggie.service.IOrdersService;
-import com.zgj.reggie.service.IShoppingCartService;
-import com.zgj.reggie.service.IUserService;
+import com.zgj.reggie.service.*;
 import dto.DishDto;
 import dto.OrdersDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpRequest;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,6 +39,8 @@ public class OrdersController {
     private IUserService userService;
     @Autowired
     private IShoppingCartService shoppingCartService;
+    @Autowired
+    private IOrderDetailService orderDetailService;
     @GetMapping("/page")
     public R<Page> page(int page, int pageSize, String number){
         //构造分页构造器
@@ -49,39 +50,7 @@ public class OrdersController {
         LambdaQueryWrapper<Orders> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.like(!StringUtils.isEmpty(number),Orders::getNumber,number);
         //添加排序条件
-        queryWrapper.orderByAsc(Orders::getOrderTime);
-        //执行查询
-        ordersService.page(pageInfo,queryWrapper);
-        //对象拷贝
-        BeanUtils.copyProperties(pageInfo,ordersDtoPage,"records");
-        List<Orders> records = pageInfo.getRecords();
-        List<OrdersDto> ordersDtoList = records.stream().map(item -> {
-            OrdersDto ordersDto = new OrdersDto();
-            //对象拷贝
-            BeanUtils.copyProperties(item, ordersDto);
-            Long addressBookId = item.getAddressBookId();//地址id
-            AddressBook addressBook = addressBookService.getById(addressBookId);//根据id查询分类对象
-            if (addressBook != null) {
-                String detail = addressBook.getDetail();//拿出category中的categoryname
-                ordersDto.setAddress(detail);//将categoryname赋值给dishdto
-            }
-            return ordersDto;
-        }).collect(Collectors.toList());
-        ordersDtoPage.setRecords(ordersDtoList);
-        return R.success(ordersDtoPage);
-    }
-
-    @GetMapping("/userPage")
-    public R<Page> userPage(HttpServletRequest request, int page, int pageSize){
-        Long userId = (Long)request.getSession().getAttribute("user");
-        //构造分页构造器
-        Page<Orders> pageInfo = new Page<>(page,pageSize);
-        Page<OrdersDto> ordersDtoPage = new Page<>();
-        //构建条件构造器
-        LambdaQueryWrapper<Orders> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(!StringUtils.isEmpty(userId),Orders::getUserId,userId);
-        //添加排序条件
-        queryWrapper.orderByAsc(Orders::getOrderTime);
+        queryWrapper.orderByDesc(Orders::getOrderTime);
         //执行查询
         ordersService.page(pageInfo,queryWrapper);
         //对象拷贝
@@ -103,7 +72,42 @@ public class OrdersController {
         return R.success(ordersDtoPage);
     }
 
+    @GetMapping("/userPage")
+    public R<Page> userPage(HttpServletRequest request, int page, int pageSize){
+        Long userId = (Long)request.getSession().getAttribute("user");
+        //构造分页构造器
+        Page<Orders> pageInfo = new Page<>(page,pageSize);
+        Page<OrdersDto> ordersDtoPage = new Page<>();
+        //构建条件构造器
+        LambdaQueryWrapper<Orders> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(!StringUtils.isEmpty(userId),Orders::getUserId,userId);
+        //添加排序条件
+        queryWrapper.orderByDesc(Orders::getOrderTime);
+        //执行查询
+        ordersService.page(pageInfo,queryWrapper);
+        //对象拷贝
+        BeanUtils.copyProperties(pageInfo,ordersDtoPage,"records");
+        List<Orders> records = pageInfo.getRecords();
+        List<OrdersDto> ordersDtoList = records.stream().map(item -> {
+            OrdersDto ordersDto = new OrdersDto();
+            //对象拷贝
+            BeanUtils.copyProperties(item, ordersDto);
+            Long addressBookId = item.getAddressBookId();//地址id
+            AddressBook addressBook = addressBookService.getById(addressBookId);//根据id查询对象
+            if (addressBook != null) {
+                String detail = addressBook.getDetail();
+                ordersDto.setAddress(detail);
+            }
+            List<OrderDetail> orderDetailList = orderDetailService.lambdaQuery().eq(OrderDetail::getOrderId, ordersDto.getId()).list();
+            ordersDto.setOrderDetails(orderDetailList);
+            return ordersDto;
+        }).collect(Collectors.toList());
+        ordersDtoPage.setRecords(ordersDtoList);
+        return R.success(ordersDtoPage);
+    }
+
     @PostMapping("/submit")
+    @Transactional
     public R<String> submit(@RequestBody Orders orders,HttpServletRequest request){
         Long userId = (Long) request.getSession().getAttribute("user");
         User user = userService.lambdaQuery().eq(User::getId, userId).one();
@@ -129,9 +133,28 @@ public class OrdersController {
         orders.setOrderTime(LocalDateTime.now());
         orders.setCheckoutTime(LocalDateTime.now());
         ordersService.save(orders);
+
+        Long orderId = ordersService.lambdaQuery().eq(Orders::getNumber, uuid).one().getId();
+//        orderDetail.setOrderId(orderId);
         LambdaQueryWrapper<ShoppingCart> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ShoppingCart::getUserId,userId);
+        List<ShoppingCart> shoppingCartList = shoppingCartService.list(lambdaQueryWrapper);
+        List<OrderDetail> orderDetailList = shoppingCartList
+                .stream().map(item -> {
+                    OrderDetail orderDetail = new OrderDetail();
+            BeanUtils.copyProperties(item, orderDetail,"id");
+            orderDetail.setOrderId(orderId);
+            return orderDetail;
+        }).collect(Collectors.toList());
+        orderDetailService.saveBatch(orderDetailList);
         shoppingCartService.remove(lambdaQueryWrapper);
+        return R.success("成功！");
+    }
+
+    @PutMapping
+    public R<String> updateStatus(@RequestBody Orders orders){
+        log.info(orders.toString());
+        ordersService.updateById(orders);
         return R.success("成功！");
     }
 }
